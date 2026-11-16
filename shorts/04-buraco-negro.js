@@ -17,6 +17,7 @@ export default {
   title: 'O que acontece se você cair em um buraco negro?',
   bloom: { strength: 0.6, radius: 0.55, threshold: 0.9 },
   nebula: { a: '#2a1440', b: '#0f2a4a', intensity: 0.18, seed: 1.3 },
+  music: { mood: 'dark', seed: 4, pulse: true }, // trilha ambiente (cosmos | warm | epic | dark)
   far: 3000,
 
   script: [

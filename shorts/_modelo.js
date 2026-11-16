@@ -13,6 +13,7 @@ export default {
   title: 'Título do short',
   bloom: { strength: 0.7, radius: 0.6, threshold: 0.85 },
   nebula: { a: '#1b2a6b', b: '#6b1b5e', intensity: 0.22, seed: 4 },
+  music: { mood: 'cosmos', seed: 5 }, // trilha: cosmos | warm | epic | dark (pulse: true = batida)
   // voice: 'pt-BR-FranciscaNeural',  // voz feminina (padrão: pt-BR-AntonioNeural)
   // rate: '+10%',                     // velocidade da fala
 

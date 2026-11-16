@@ -9,6 +9,7 @@ export default {
   title: 'Uma colher desta estrela pesa 1 bilhão de toneladas',
   bloom: { strength: 0.75, radius: 0.55, threshold: 0.85 },
   nebula: { a: '#13306e', b: '#4a1770', intensity: 0.28, seed: 2.2 },
+  music: { mood: 'cosmos', seed: 1 }, // trilha ambiente (cosmos | warm | epic | dark)
   far: 3000,
 
   // Roteiro narrado: *amarelo*, **ciano**. Opções por frase: flash, shake, punch, sfx

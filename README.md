@@ -7,7 +7,7 @@ Estúdio para produzir **YouTube Shorts sobre curiosidades do universo** com ani
 - **Legendas palavra por palavra** sincronizadas com a voz, no estilo dos Shorts
 - Animações e efeitos (zoom, tremor, clarão, *whoosh*, *boom*) disparados pelas frases da narração
 - Gravação **quadro a quadro** em MP4. O vídeo sai sem travadas mesmo num PC fraco.
-- Trilha com batida e efeitos sonoros gerados automaticamente (sem direitos autorais), ou a sua própria música
+- **Música ambiente original** sintetizada para cada short (pads, sinos, vento cósmico), que abaixa sozinha quando a voz fala. Sem direitos autorais.
 - Arquivo `.txt` com título, descrição, hashtags e tags prontos para o upload
 
 ## Shorts incluídos
@@ -26,7 +26,7 @@ Requisitos: [Node.js 18+](https://nodejs.org) e [ffmpeg](https://ffmpeg.org/down
 ```bash
 npm install                                              # three.js + fonte
 npm i -D playwright && npx playwright install chromium   # só para gravar MP4
-pip install edge-tts                                     # só para gerar narração nova
+pip install edge-tts numpy                               # narração nova e música ambiente
 ```
 As narrações dos 4 shorts já vêm prontas na pasta `narration/`.
 
@@ -54,6 +54,8 @@ npm run narrate -- --all
 npm run record -- 01                       # grava out/01-estrela-de-neutrons.mp4 (+ .txt)
 npm run record -- 01 --audio musica.mp3    # troca a trilha pela sua música (a voz continua)
 npm run record -- 01 --no-voice            # sem narração
+npm run record -- 01 --remix               # refaz só o áudio (rápido), sem renderizar de novo
+npm run record -- 01 --music-volume 0.7    # música mais alta (padrão 0.5)
 npm run record -- 01 --no-audio            # vídeo mudo (para editar no CapCut)
 npm run record -- 01 --still 9             # capa PNG do segundo 9
 npm run record -- 01 --from 10 --to 15     # só um trecho (para testar)
@@ -93,6 +95,8 @@ Peças prontas em `engine/space.js`:
 | `keyframes(t, [[t0,v0],[t1,v1]])` | anima um valor por keyframes com suavização |
 | `phase(t, a, b)` | progresso 0→1 suavizado entre os segundos `a` e `b` |
 
+Trilha: `music: { mood: 'cosmos' | 'warm' | 'epic' | 'dark', seed: 1, pulse: true }` (o `seed` muda a melodia, e `pulse` adiciona uma batida de coração grave).
+
 No roteiro, `*texto*` fica **amarelo** e `**texto**` fica **ciano**. Opções por frase: `punch` (zoom), `shake` (tremor), `flash` (clarão) e `sfx` (`'whoosh'`, `'boom'` ou `null`).
 
 O @ do canal fica escondido por padrão (`showHandle: false` em `config.js`).
@@ -109,6 +113,7 @@ engine/script.js     roteiro → palavras, tempos e blocos de legenda
 narration/           vozes geradas (.mp3 + tempos .json)
 shorts/*.js          um arquivo por short
 tools/narrate.mjs    gera a narração (edge-tts)
+tools/music.py       gera a música ambiente (numpy)
 tools/record.mjs     gravação MP4 (Playwright + ffmpeg)
 docs/ESTRATEGIA.md   plano do canal + 30 ideias de pauta
 ```

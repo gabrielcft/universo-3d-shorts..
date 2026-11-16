@@ -234,6 +234,7 @@ export async function runShort(def) {
   window.__short = {
     id: def.id, duration, fps: def.fps ?? FPS, renderAt, youtube: def.youtube, title: def.title,
     audio: narration?.audio || null, estimated: !!narration?.estimated,
+    music: def.music || null,
     sfx: def.script ? beats.map((bt, i) => ({ t: bt.t, type: bt.sfx ?? (i === 0 ? null : 'whoosh') })).filter((x) => x.type)
       .concat((def.fx?.(ctx) || []).filter((x) => x.sfx).map((x) => ({ t: x.t, type: x.sfx }))) : [],
   };

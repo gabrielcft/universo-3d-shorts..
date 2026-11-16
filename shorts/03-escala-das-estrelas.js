@@ -46,6 +46,7 @@ function cameraAt(t, FOCUS, TRANS) {
 
 export default {
   title: 'O quão pequena a Terra é?',
+  music: { mood: 'epic', seed: 3 }, // trilha ambiente (cosmos | warm | epic | dark)
   logDepth: true,
   near: 0.01,
   far: 4e6,

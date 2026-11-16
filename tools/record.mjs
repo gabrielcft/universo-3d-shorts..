@@ -4,8 +4,9 @@
 //   npm run record -- 01-estrela-de-neutrons --audio minha-musica.mp3
 //   npm run record -- 01-estrela-de-neutrons --still 12      (capa PNG no segundo 12)
 //   npm run record:all
+//   npm run record -- 01 --remix            (refaz só o áudio de um vídeo já gravado)
 //
-// Opções: --fps 30  --from 0 --to 10  --audio musica.mp3  --no-audio  --no-voice  --no-sfx  --out pasta  --quality 18
+// Opções: --fps 30  --from 0 --to 10  --audio musica.mp3  --no-audio  --no-voice  --no-sfx  --music-volume 0.5  --out pasta  --quality 18
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
@@ -50,19 +51,10 @@ function run(cmd, args, input) {
 }
 
 // ---------- trilha e efeitos (gerados matematicamente, sem direitos autorais) ----------
-async function makeMusic(file, dur) {
-  const pad = [
-    '0.16*sin(2*PI*55*t)*(0.65+0.35*sin(2*PI*0.07*t))',
-    '0.10*sin(2*PI*82.41*t+0.8*sin(2*PI*0.13*t))',
-    '0.07*sin(2*PI*110*t)*(0.5+0.5*sin(2*PI*0.11*t+1))',
-    '0.04*sin(2*PI*164.81*t)*(0.5+0.5*sin(2*PI*0.05*t+2))',
-  ].join('+');
-  // batida grave (~100 bpm) + chimbal suave
-  const kick = '0.55*sin(2*PI*48*mod(t,0.6)*(1+2.5*exp(-30*mod(t,0.6))))*exp(-7*mod(t,0.6))';
-  const tick = '0.05*sin(2*PI*5200*t)*exp(-60*mod(t+0.3,0.6))';
-  await run('ffmpeg', ['-y', '-f', 'lavfi', '-i', `aevalsrc='${pad}+${kick}+${tick}':s=48000:d=${dur}`,
-    '-af', `lowpass=f=6000,aecho=0.8:0.8:600:0.25,afade=t=in:d=0.8,afade=t=out:st=${Math.max(0, dur - 1.2)}:d=1.2`,
-    '-ac', '2', '-c:a', 'pcm_s16le', file]);
+// Trilha ambiente sintetizada (tools/music.py). Humores: cosmos, warm, epic, dark
+async function makeMusic(file, dur, music = {}) {
+  await run('python3', [path.join(ROOT, 'tools', 'music.py'), file, String(dur + 0.5),
+    music.mood || 'cosmos', String(music.seed ?? 1), music.pulse ? '1' : '0']);
 }
 
 async function makeSfx(dir) {
@@ -74,12 +66,20 @@ async function makeSfx(dir) {
   return { whoosh, boom };
 }
 
-async function mixAudio({ video, narration, music, sfx, events, out, dur }) {
+async function mixAudio({ video, narration, music, sfx, events, out, dur, musicVol = 0.5 }) {
   const args = ['-y', '-i', video];
   const parts = [];
   let n = 1;
-  if (narration) { args.push('-i', narration); parts.push(`[${n}]aresample=48000,aformat=channel_layouts=stereo,volume=1.0[nar]`); n++; }
-  args.push('-i', music); parts.push(`[${n}]volume=${narration ? 0.22 : 0.9}[mus]`); n++;
+  if (narration) {
+    args.push('-i', narration);
+    parts.push(`[${n}]aresample=48000,aformat=channel_layouts=stereo,volume=1.0,asplit=2[nar][key]`); n++;
+  }
+  args.push('-i', music);
+  // ducking: a música abaixa sozinha enquanto a voz fala
+  parts.push(narration
+    ? `[${n}]aformat=channel_layouts=stereo,volume=${musicVol}[m0];[m0][key]sidechaincompress=threshold=0.02:ratio=5:attack=40:release=500:makeup=1[mus]`
+    : `[${n}]volume=0.9[mus]`);
+  n++;
   const evs = events.filter((e) => sfx[e.type]);
   const sfxIdx = {};
   for (const type of Object.keys(sfx)) {
@@ -119,7 +119,7 @@ try {
     page.on('console', (m) => { if (m.type() === 'error') console.error(`[${id}]`, m.text()); });
     await page.goto(`http://127.0.0.1:${port}/player.html?s=${id}&record=1`);
     await page.waitForFunction(() => window.__short?.ready, null, { timeout: 120000 });
-    const info = await page.evaluate(() => { const s = window.__short; return { duration: s.duration, fps: s.fps, youtube: s.youtube, title: s.title, audio: s.audio, estimated: s.estimated, sfx: s.sfx }; });
+    const info = await page.evaluate(() => { const s = window.__short; return { duration: s.duration, fps: s.fps, youtube: s.youtube, title: s.title, audio: s.audio, estimated: s.estimated, sfx: s.sfx, music: s.music }; });
 
     const still = opt('still');
     if (still !== undefined) {
@@ -140,7 +140,11 @@ try {
     console.log(`\n▶ ${id} — "${info.title}"  (${(to - from).toFixed(1)}s, ${frames} quadros)`);
 
     const t0 = Date.now();
-    await run('ffmpeg', ['-y', '-f', 'image2pipe', '-framerate', String(fps), '-c:v', 'mjpeg', '-i', '-',
+    if (flag('remix') && fs.existsSync(final)) {
+      // reaproveita a imagem já gravada e refaz só o áudio
+      console.log('  ♫ remix: refazendo só o áudio');
+      await run('ffmpeg', ['-y', '-i', final, '-an', '-c:v', 'copy', silent]);
+    } else await run('ffmpeg', ['-y', '-f', 'image2pipe', '-framerate', String(fps), '-c:v', 'mjpeg', '-i', '-',
       '-c:v', 'libx264', '-preset', 'slow', '-crf', String(opt('quality', 18)), '-pix_fmt', 'yuv420p',
       '-r', String(fps), '-movflags', '+faststart', silent], async (stdin) => {
       for (let f = 0; f < frames; f++) {
@@ -164,10 +168,10 @@ try {
       const dur = to - from;
       let music = opt('audio') && path.resolve(opt('audio'));
       const tmpMusic = !music;
-      if (!music) { music = path.join(OUT, `.${id}-music.wav`); await makeMusic(music, dur); }
+      if (!music) { music = path.join(OUT, `.${id}-music.wav`); await makeMusic(music, dur, info.music); }
       const sfx = flag('no-sfx') ? {} : await makeSfx(OUT);
       const narration = !flag('no-voice') && info.audio && from === 0 ? path.join(ROOT, info.audio) : null;
-      await mixAudio({ video: silent, narration, music, sfx, events: info.sfx || [], out: final, dur });
+      await mixAudio({ video: silent, narration, music, sfx, events: info.sfx || [], out: final, dur, musicVol: Number(opt('music-volume', info.music?.volume ?? 0.5)) });
       fs.rmSync(silent, { force: true });
       if (tmpMusic) fs.rmSync(music, { force: true });
       Object.values(sfx).forEach((f) => fs.rmSync(f, { force: true }));

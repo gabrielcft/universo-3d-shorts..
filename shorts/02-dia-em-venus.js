@@ -14,6 +14,7 @@ export default {
   title: 'Em Vênus, um dia dura mais que um ano',
   bloom: { strength: 0.7, radius: 0.6, threshold: 0.85 },
   nebula: { a: '#3a1f12', b: '#13254f', intensity: 0.2, seed: 5.4 },
+  music: { mood: 'warm', seed: 2 }, // trilha ambiente (cosmos | warm | epic | dark)
   far: 3000,
 
   script: [
