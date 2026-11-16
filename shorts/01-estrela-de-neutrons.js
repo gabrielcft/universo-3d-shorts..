@@ -1,30 +1,29 @@
 // SHORT 01 — Uma colher de estrela de nêutrons pesa ~1 bilhão de toneladas
 import * as THREE from 'three';
-import { CHANNEL } from '../config.js';
 import {
   createStarMaterial, createGlow, createFresnelMaterial, glowTexture, shader,
   phase, keyframes, integrate, smoothstep, clamp01, ease,
 } from '../engine/space.js';
 
-const omega = (t) => 0.8 + 12.5 * phase(t, 21.5, 25.5, ease.inCubic); // rad/s do giro
-
 export default {
   title: 'Uma colher desta estrela pesa 1 bilhão de toneladas',
-  duration: 34,
   bloom: { strength: 0.75, radius: 0.55, threshold: 0.85 },
   nebula: { a: '#13306e', b: '#4a1770', intensity: 0.28, seed: 2.2 },
   far: 3000,
 
-  captions: [
-    { t: [0.0, 3.3], text: 'Uma *colher de chá* desta estrela...', size: 'xl' },
-    { t: [3.3, 7.0], text: '...pesa cerca de\n*1 bilhão de toneladas*', size: 'xl' },
-    { t: [7.0, 11.6], text: 'Isso é uma\n**estrela de nêutrons**' },
-    { t: [11.6, 16.4], text: 'O núcleo que sobra quando uma estrela gigante *explode*' },
-    { t: [16.4, 21.4], text: 'Mais massa que o *Sol*, espremida em uma bola de *~20 km*' },
-    { t: [21.4, 26.4], text: 'E ela pode girar\n*mais de 700 vezes\npor segundo*' },
-    { t: [26.4, 31.0], text: 'Seus feixes varrem o espaço como um **farol cósmico**' },
-    { t: [31.0, 34.0], text: CHANNEL.outro, size: 'm' },
+  // Roteiro narrado: *amarelo*, **ciano**. Opções por frase: flash, shake, punch, sfx
+  script: [
+    { id: 'hook', text: 'Uma colher de chá desta estrela pesa *um bilhão de toneladas*.', sfx: 'boom' },
+    { id: 'what', text: 'Isso é uma **estrela de nêutrons**.', punch: 0.09 },
+    { id: 'origin', text: 'É o que sobra quando uma estrela gigante *explode*.' },
+    { id: 'mass', text: 'Ela tem mais massa que o *Sol inteiro*...' },
+    { id: 'city', text: 'espremida numa bola do tamanho de uma *cidade*.', punch: 0.1 },
+    { id: 'spin', text: 'E ela gira. *Muito* rápido.' },
+    { id: 'spin2', text: 'Algumas, *mais de setecentas vezes por segundo*!', shake: 0.6 },
+    { id: 'beam', text: 'Seus feixes varrem o espaço como um **farol cósmico**.' },
+    { id: 'outro', text: 'Segue pra ver mais segredos do universo!' },
   ],
+  fx: ({ W }) => [{ t: W('origin', 'explode'), flash: 1, shake: 1, punch: 0.08, sfx: 'boom' }],
 
   youtube: {
     title: 'Uma colher desta estrela pesa 1 BILHÃO de toneladas 🤯',
@@ -33,7 +32,7 @@ export default {
     tags: ['estrela de nêutrons', 'pulsar', 'universo', 'astronomia', 'curiosidades do espaço', 'ciência'],
   },
 
-  setup({ scene }) {
+  setup({ scene, B }) {
     const star = new THREE.Mesh(
       new THREE.SphereGeometry(1, 128, 64),
       createStarMaterial({ color: '#2f6dff', hot: '#eaf6ff', intensity: 1.15, scale: 5, speed: 2 }),
@@ -48,12 +47,12 @@ export default {
     mag.rotation.z = 0.5; // eixo magnético inclinado em relação ao de rotação
     spin.add(mag);
 
-    // Feixes de radiação (cones aditivos)
+    // Feixes de radiação
     const L = 16;
     const beamMat = shader({
       uniforms: { uO: { value: 0 }, uColor: { value: new THREE.Color('#a8d4ff') } },
       vertex: /* glsl */ `
-        uniform float uL; varying float vY; varying vec3 vN; varying vec3 vV;
+        varying float vY; varying vec3 vN; varying vec3 vV;
         void main(){
           vY = position.y / ${L.toFixed(1)};
           vN = normalize(normalMatrix * normal);
@@ -71,10 +70,10 @@ export default {
         }`,
       transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
     });
-    for (const [r, k] of [[1.5, 1], [0.55, 1]]) {
+    for (const r of [1.5, 0.55]) {
       const g = new THREE.ConeGeometry(r, L, 48, 1, true);
       g.translate(0, -L / 2, 0);
-      g.rotateX(Math.PI); // ápice na origem, abrindo para +Y
+      g.rotateX(Math.PI);
       const up = new THREE.Mesh(g, beamMat);
       const down = up.clone();
       down.rotation.z = Math.PI;
@@ -102,7 +101,6 @@ export default {
         mag.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 120, 0.011 + Ls * 0.003, 6), lineMat));
       }
     }
-    // Partículas correndo pelas linhas de campo
     const PER = 3;
     const pPos = new Float32Array(curves.length * PER * 3);
     const pGeo = new THREE.BufferGeometry();
@@ -120,17 +118,21 @@ export default {
     const shock = new THREE.Mesh(new THREE.SphereGeometry(1, 96, 48), shockMat);
     scene.add(shock);
 
-    return { star, glow, spin, mag, beamMat, lineMat, curves, PER, pPos, pGeo, pMat, shock, shockMat, tmp: new THREE.Vector3(), q: new THREE.Quaternion() };
+    // Velocidade de giro guiada pela narração
+    const s0 = B('spin'), s1 = B('spin2') + 0.6;
+    const omega = (t) => 0.9 + 3 * phase(t, s0, s0 + 1.2) + 10 * phase(t, B('spin2') - 0.2, s1, ease.inCubic);
+
+    return { star, glow, spin, mag, beamMat, lineMat, curves, PER, pPos, pGeo, pMat, shock, shockMat, omega, tmp: new THREE.Vector3(), q: new THREE.Quaternion() };
   },
 
-  update(t, { camera, bloom }, s) {
+  update(t, { camera, bloom, B, W, E }, s) {
     s.star.material.uniforms.uTime.value = t;
-    s.spin.rotation.y = integrate(omega, t);
+    s.spin.rotation.y = integrate(s.omega, t);
 
-    // Campo magnético e feixes aparecem
-    s.lineMat.opacity = 0.5 * phase(t, 6.8, 9.5);
-    s.pMat.opacity = phase(t, 7.5, 10);
-    s.beamMat.uniforms.uO.value = phase(t, 7.4, 10);
+    const on = phase(t, B('what') - 0.1, B('what') + 0.9);
+    s.lineMat.opacity = 0.5 * on;
+    s.pMat.opacity = on;
+    s.beamMat.uniforms.uO.value = on;
     s.curves.forEach((c, i) => {
       for (let k = 0; k < s.PER; k++) {
         const u = (t * 0.22 + k / s.PER + i * 0.137) % 1;
@@ -140,27 +142,31 @@ export default {
     });
     s.pGeo.attributes.position.needsUpdate = true;
 
-    // Câmera: começa colada na estrela e se afasta
-    const dist = keyframes(t, [[0, 3.2], [3.3, 3.8], [7, 4.5], [11, 12], [14, 15], [16.4, 13], [21, 5.2], [24, 9], [31, 12.5], [34, 14]]);
-    const el = keyframes(t, [[0, 0.15], [7, 0.3], [16, 0.42], [21.5, 0.3], [34, 0.36]]);
-    const az = 0.6 + t * 0.07;
+    // Câmera guiada pelas frases
+    const boom = W('origin', 'explode');
+    const dist = keyframes(t, [
+      [0, 2.7], [E('hook'), 3.6], [B('what') + 1.0, 11], [boom, 9.5], [boom + 1.2, 15], [B('mass') + 0.8, 9],
+      [B('city') + 0.6, 4.4], [B('spin') + 0.8, 7.5], [B('spin2') + 0.8, 6], [B('beam') + 1, 10.5], [B('outro') + 1, 13],
+    ]);
+    const el = keyframes(t, [[0, 0.1], [B('what') + 1, 0.3], [B('mass'), 0.42], [B('spin'), 0.3], [B('beam') + 0.5, 0.92], [B('outro') + 1, 0.5]]);
+    const az = 0.4 + t * 0.12 + 0.9 * phase(t, B('what'), B('what') + 1.2);
     camera.position.set(dist * Math.cos(el) * Math.sin(az), dist * Math.sin(el), dist * Math.cos(el) * Math.cos(az));
-    camera.lookAt(0, 0, 0);
+    camera.lookAt(0, -0.35, 0);
 
-    // Supernova: clarão + onda de choque
-    const ts = t - 12.2;
+    // Supernova
+    const ts = t - boom;
     const flash = ts > 0 ? Math.exp(-ts * 2.2) : 0;
     const sw = clamp01(ts / 3);
     s.shock.visible = ts > 0 && ts < 3;
     s.shock.scale.setScalar(1.2 + ease.outCubic(sw) * 26);
     s.shockMat.uniforms.uI.value = (1 - sw) ** 2 * 2.5;
 
-    // Efeito "farol": brilho extra quando um feixe aponta para a câmera
+    // Efeito farol
     s.spin.updateMatrixWorld();
     s.mag.getWorldQuaternion(s.q);
     const axis = s.tmp.set(0, 1, 0).applyQuaternion(s.q);
     const facing = Math.abs(axis.dot(camera.position.clone().normalize()));
-    const beacon = smoothstep(0.86, 0.99, facing) * phase(t, 7.4, 10);
+    const beacon = smoothstep(0.86, 0.99, facing) * on;
 
     s.glow.scale.setScalar(4 + flash * 26 + beacon * 3);
     s.glow.material.color.set('#6aa8ff').multiplyScalar(0.45 + flash * 1.6 + beacon * 0.6);

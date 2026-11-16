@@ -5,7 +5,7 @@
 //   npm run record -- 01-estrela-de-neutrons --still 12      (capa PNG no segundo 12)
 //   npm run record:all
 //
-// Opções: --fps 30  --from 0 --to 10  --no-audio  --audio arquivo  --out pasta  --quality 18
+// Opções: --fps 30  --from 0 --to 10  --audio musica.mp3  --no-audio  --no-voice  --no-sfx  --out pasta  --quality 18
 import fs from 'node:fs';
 import path from 'node:path';
 import { spawn } from 'node:child_process';
@@ -49,18 +49,60 @@ function run(cmd, args, input) {
   });
 }
 
-// Trilha ambiente "espacial" gerada matematicamente (sem direitos autorais).
-async function makeDrone(file, dur) {
-  const expr = [
-    '0.20*sin(2*PI*55*t)*(0.65+0.35*sin(2*PI*0.07*t))',
-    '0.12*sin(2*PI*82.41*t+0.8*sin(2*PI*0.13*t))',
-    '0.08*sin(2*PI*110*t)*(0.5+0.5*sin(2*PI*0.11*t+1))',
-    '0.05*sin(2*PI*164.81*t)*(0.5+0.5*sin(2*PI*0.05*t+2))',
-    '0.03*sin(2*PI*329.63*t)*(0.5+0.5*sin(2*PI*0.17*t))',
+// ---------- trilha e efeitos (gerados matematicamente, sem direitos autorais) ----------
+async function makeMusic(file, dur) {
+  const pad = [
+    '0.16*sin(2*PI*55*t)*(0.65+0.35*sin(2*PI*0.07*t))',
+    '0.10*sin(2*PI*82.41*t+0.8*sin(2*PI*0.13*t))',
+    '0.07*sin(2*PI*110*t)*(0.5+0.5*sin(2*PI*0.11*t+1))',
+    '0.04*sin(2*PI*164.81*t)*(0.5+0.5*sin(2*PI*0.05*t+2))',
   ].join('+');
-  await run('ffmpeg', ['-y', '-f', 'lavfi', '-i', `aevalsrc=${expr}|${expr.replace(/0\.8\*sin/, '0.9*sin')}:s=48000:d=${dur}`,
-    '-af', `lowpass=f=1400,aecho=0.8:0.85:700|1300:0.35|0.25,afade=t=in:d=1.5,afade=t=out:st=${Math.max(0, dur - 1.5)}:d=1.5,volume=0.9`,
-    '-c:a', 'pcm_s16le', file]);
+  // batida grave (~100 bpm) + chimbal suave
+  const kick = '0.55*sin(2*PI*48*mod(t,0.6)*(1+2.5*exp(-30*mod(t,0.6))))*exp(-7*mod(t,0.6))';
+  const tick = '0.05*sin(2*PI*5200*t)*exp(-60*mod(t+0.3,0.6))';
+  await run('ffmpeg', ['-y', '-f', 'lavfi', '-i', `aevalsrc='${pad}+${kick}+${tick}':s=48000:d=${dur}`,
+    '-af', `lowpass=f=6000,aecho=0.8:0.8:600:0.25,afade=t=in:d=0.8,afade=t=out:st=${Math.max(0, dur - 1.2)}:d=1.2`,
+    '-ac', '2', '-c:a', 'pcm_s16le', file]);
+}
+
+async function makeSfx(dir) {
+  const whoosh = path.join(dir, '.whoosh.wav'), boom = path.join(dir, '.boom.wav');
+  await run('ffmpeg', ['-y', '-f', 'lavfi', '-i', 'anoisesrc=d=0.6:c=pink:a=0.7:r=48000',
+    '-af', 'highpass=f=400,lowpass=f=5000,afade=t=in:d=0.38:curve=exp,afade=t=out:st=0.38:d=0.22,volume=0.9', whoosh]);
+  await run('ffmpeg', ['-y', '-f', 'lavfi', '-i', "aevalsrc='0.95*sin(2*PI*(70*t-30*t*t))*exp(-2.6*t)':s=48000:d=1.6",
+    '-af', 'lowpass=f=300,volume=1.4', boom]);
+  return { whoosh, boom };
+}
+
+async function mixAudio({ video, narration, music, sfx, events, out, dur }) {
+  const args = ['-y', '-i', video];
+  const parts = [];
+  let n = 1;
+  if (narration) { args.push('-i', narration); parts.push(`[${n}]aresample=48000,aformat=channel_layouts=stereo,volume=1.0[nar]`); n++; }
+  args.push('-i', music); parts.push(`[${n}]volume=${narration ? 0.22 : 0.9}[mus]`); n++;
+  const evs = events.filter((e) => sfx[e.type]);
+  const sfxIdx = {};
+  for (const type of Object.keys(sfx)) {
+    const count = evs.filter((e) => e.type === type).length;
+    if (!count) continue;
+    args.push('-i', sfx[type]); sfxIdx[type] = n;
+    parts.push(`[${n}]aformat=channel_layouts=stereo,asplit=${count}${Array.from({ length: count }, (_, k) => `[${type}${k}]`).join('')}`);
+    n++;
+  }
+  const used = {};
+  const labels = evs.map((e, k) => {
+    const c = used[e.type] = (used[e.type] ?? -1) + 1;
+    const lead = e.type === 'whoosh' ? 0.3 : 0.02;
+    const ms = Math.max(0, Math.round((e.t - lead) * 1000));
+    parts.push(`[${e.type}${c}]adelay=${ms}:all=1,volume=${e.type === 'whoosh' ? 0.35 : 0.6}[fx${k}]`);
+    return `[fx${k}]`;
+  });
+  const inputs = [narration ? '[nar]' : '', '[mus]', ...labels].join('');
+  const count = (narration ? 1 : 0) + 1 + labels.length;
+  parts.push(`${inputs}amix=inputs=${count}:normalize=0:duration=longest,atrim=0:${dur.toFixed(2)},alimiter=limit=0.95[a]`);
+  args.push('-filter_complex', parts.join(';'), '-map', '0:v', '-map', '[a]', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '192k',
+    '-t', dur.toFixed(2), '-movflags', '+faststart', out);
+  await run('ffmpeg', args);
 }
 
 // ---------- gravação ----------
@@ -77,7 +119,7 @@ try {
     page.on('console', (m) => { if (m.type() === 'error') console.error(`[${id}]`, m.text()); });
     await page.goto(`http://127.0.0.1:${port}/player.html?s=${id}&record=1`);
     await page.waitForFunction(() => window.__short?.ready, null, { timeout: 120000 });
-    const info = await page.evaluate(() => ({ duration: window.__short.duration, fps: window.__short.fps, youtube: window.__short.youtube, title: window.__short.title }));
+    const info = await page.evaluate(() => { const s = window.__short; return { duration: s.duration, fps: s.fps, youtube: s.youtube, title: s.title, audio: s.audio, estimated: s.estimated, sfx: s.sfx }; });
 
     const still = opt('still');
     if (still !== undefined) {
@@ -114,17 +156,21 @@ try {
     });
     process.stdout.write('\n');
 
-    // áudio
-    const audio = opt('audio');
+    // áudio: narração + trilha + efeitos
+    if (info.estimated) console.warn('  ⚠ sem narração gerada — rode antes: npm run narrate --', id);
     if (flag('no-audio')) {
       fs.renameSync(silent, final);
     } else {
-      let track = audio && path.resolve(audio);
-      if (!track) { track = path.join(OUT, `.${id}-drone.wav`); await makeDrone(track, to - from); }
-      await run('ffmpeg', ['-y', '-i', silent, '-i', track, '-map', '0:v', '-map', '1:a', '-c:v', 'copy',
-        '-c:a', 'aac', '-b:a', '192k', '-shortest', '-movflags', '+faststart', final]);
+      const dur = to - from;
+      let music = opt('audio') && path.resolve(opt('audio'));
+      const tmpMusic = !music;
+      if (!music) { music = path.join(OUT, `.${id}-music.wav`); await makeMusic(music, dur); }
+      const sfx = flag('no-sfx') ? {} : await makeSfx(OUT);
+      const narration = !flag('no-voice') && info.audio && from === 0 ? path.join(ROOT, info.audio) : null;
+      await mixAudio({ video: silent, narration, music, sfx, events: info.sfx || [], out: final, dur });
       fs.rmSync(silent, { force: true });
-      if (!audio) fs.rmSync(track, { force: true });
+      if (tmpMusic) fs.rmSync(music, { force: true });
+      Object.values(sfx).forEach((f) => fs.rmSync(f, { force: true }));
     }
 
     // metadados para o upload

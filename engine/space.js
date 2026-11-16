@@ -25,6 +25,9 @@ export function phase(t, a, b, fn = ease.inOutCubic) {
 
 /** Interpola valores por keyframes [[t, v], ...] com easing entre cada par. */
 export function keyframes(t, keys, fn = ease.inOutCubic) {
+  // garante tempos crescentes (útil quando vêm da narração)
+  keys = keys.map(([kt, v]) => [kt, v]);
+  for (let i = 1; i < keys.length; i++) keys[i][0] = Math.max(keys[i][0], keys[i - 1][0] + 0.05);
   if (t <= keys[0][0]) return keys[0][1];
   for (let i = 0; i < keys.length - 1; i++) {
     const [t0, v0] = keys[i], [t1, v1] = keys[i + 1];

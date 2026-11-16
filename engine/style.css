@@ -33,9 +33,22 @@ html, body { margin: 0; height: 100%; background: #050507; overflow: hidden;
 .cap.pos-center { top: 50%; }
 .cap.pos-bottom { bottom: 560px; }
 
+/* Legendas da narração (palavra por palavra) */
+#stage { --capY: 1240px; }
+.kchunk { position: absolute; left: 50px; right: 50px; top: var(--capY); transform: translateY(-50%);
+  text-align: center; font-weight: 900; font-size: 112px; line-height: 1.04; letter-spacing: -0.01em; }
+.kw { display: inline-block; margin: 0 0.13em; opacity: 0; transform-origin: 50% 70%;
+  -webkit-text-stroke: 16px #000; paint-order: stroke fill;
+  text-shadow: 0 8px 0 rgba(0,0,0,.55), 0 0 40px rgba(0,0,0,.7); }
+.kw.hl { color: var(--hl); }
+.kw.hl2 { color: var(--hl2); }
+
+#vignette { position: absolute; inset: 0; background: radial-gradient(ellipse 75% 60% at 50% 48%, transparent 55%, rgba(0,0,0,.55) 100%); }
+#flash { position: absolute; inset: 0; background: #fff; opacity: 0; mix-blend-mode: screen; }
+
 /* HUD genérico usado pelas cenas */
 #hud { position: absolute; inset: 0; }
-.panel { position: absolute; left: 110px; right: 110px; bottom: 540px; padding: 34px 40px;
+.panel { position: absolute; left: 110px; right: 110px; top: 300px; padding: 34px 40px;
   border-radius: 34px; background: rgba(8,10,22,.55); border: 2px solid rgba(255,255,255,.14);
   backdrop-filter: blur(8px); font-weight: 700; font-size: 38px; opacity: 0; }
 .panel .row { display: flex; justify-content: space-between; align-items: baseline; margin: 6px 0 12px; }

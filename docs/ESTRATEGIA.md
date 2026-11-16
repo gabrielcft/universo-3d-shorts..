@@ -4,13 +4,12 @@
 
 **Sugestões de nome:** Universo em 3D · Cosmos Curioso · Além das Estrelas · Órbita 3D · Fatos do Cosmos
 
-Antes de escolher, confira se o @ está livre no YouTube, no TikTok e no Instagram. Depois atualize `config.js`.
+Antes de escolher, confira se o @ está livre no YouTube, no TikTok e no Instagram.
 
 **Identidade visual (já aplicada nos vídeos):**
 - Fundo espacial escuro com nebulosa sutil
 - Fonte Montserrat Black nas legendas
 - Destaques em **amarelo `#ffd23f`** (números e fatos) e **ciano `#3df5ff`** (termos científicos)
-- O @ do canal discreto no topo de todo vídeo
 
 ## Fórmula de cada short (25–45 s)
 
@@ -24,7 +23,7 @@ Antes de escolher, confira se o @ está livre no YouTube, no TikTok e no Instagr
 Dicas:
 - **Loop:** termine com um visual parecido com o do início. O replay conta como visualização.
 - Uma ideia por vídeo. Corte tudo o que não for essencial.
-- Narração (sua voz ou TTS) costuma aumentar a retenção. Grave com `--no-audio` e monte no CapCut.
+- A narração é gerada automaticamente (`npm run narrate`). Frases curtas, com uma ideia cada, deixam o vídeo mais dinâmico. Cada frase nova dispara um corte de câmera e um efeito.
 - Confira os fatos em fontes como NASA, ESA e Wikipedia. Quando o número for aproximado, diga "cerca de".
 
 ## Rotina de publicação

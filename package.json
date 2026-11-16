@@ -6,8 +6,10 @@
   "description": "Estúdio de YouTube Shorts sobre curiosidades do universo com animações 3D em HTML (Three.js)",
   "scripts": {
     "dev": "node tools/server.mjs",
+    "narrate": "node tools/narrate.mjs",
     "record": "node tools/record.mjs",
-    "record:all": "node tools/record.mjs --all"
+    "record:all": "node tools/record.mjs --all",
+    "build": "node tools/narrate.mjs --all && node tools/record.mjs --all"
   },
   "dependencies": {
     "@fontsource/montserrat": "5.0.19",

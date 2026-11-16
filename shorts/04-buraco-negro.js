@@ -1,29 +1,34 @@
 // SHORT 04 — O que acontece se você cair em um buraco negro?
 import * as THREE from 'three';
-import { CHANNEL } from '../config.js';
 import { shader, createGlow, phase, keyframes, clamp01, ease } from '../engine/space.js';
 
 const IN = 1.7, OUT = 6.5; // raio interno/externo do disco de acreção
 
 const pad = (n) => String(Math.floor(n)).padStart(2, '0');
 const hms = (sec) => `${pad(sec / 3600)}:${pad((sec / 60) % 60)}:${pad(sec % 60)}`;
+const longTime = (sec) => {
+  const days = sec / 86400;
+  if (days >= 365) { const y = Math.floor(days / 365); return `${y} ${y === 1 ? 'ano' : 'anos'} ${Math.floor(days % 365)} d`; }
+  if (days >= 1) return `${Math.floor(days)} d ${pad((sec / 3600) % 24)} h`;
+  return hms(sec);
+};
 
 export default {
   title: 'O que acontece se você cair em um buraco negro?',
-  duration: 36,
   bloom: { strength: 0.6, radius: 0.55, threshold: 0.9 },
   nebula: { a: '#2a1440', b: '#0f2a4a', intensity: 0.18, seed: 1.3 },
   far: 3000,
 
-  captions: [
-    { t: [0.0, 3.5], text: 'O que acontece se você cair em um *buraco negro*?', size: 'xl' },
-    { t: [3.5, 8.0], text: 'Nada escapa dele.\n*Nem a luz.*' },
-    { t: [8.0, 13.0], text: 'Esse anel é gás girando a uma *fração da velocidade da luz*' },
-    { t: [13.0, 18.3], text: 'Perto dele, o *tempo passa mais devagar*' },
-    { t: [18.3, 24.0], text: 'E a gravidade te esticaria como um espaguete: a **espaguetificação**' },
-    { t: [24.0, 29.5], text: 'O maior já medido, *TON 618*, tem dezenas de *bilhões* de vezes a massa do Sol' },
-    { t: [29.5, 33.0], text: 'Seu horizonte é muito maior que a *órbita de Netuno*' },
-    { t: [33.0, 36.0], text: CHANNEL.outro, size: 'm' },
+  script: [
+    { id: 'hook', text: 'O que acontece se você cair num *buraco negro*?', sfx: 'boom' },
+    { id: 'light', text: 'Primeiro: nada escapa dele. *Nem a luz*.', punch: 0.08 },
+    { id: 'disk', text: 'Esse anel é gás girando a uma *fração da velocidade da luz*.' },
+    { id: 'time', text: 'Conforme você se aproxima, o *tempo desacelera*.' },
+    { id: 'time2', text: 'Minutos pra você... podem ser *anos* lá fora.', punch: 0.08 },
+    { id: 'spag', text: 'E a gravidade te estica como um espaguete: a **espaguetificação**!', shake: 0.4 },
+    { id: 'ton', text: 'O maior já medido, *TON 618*, tem *dezenas de bilhões* de vezes a massa do Sol.', flash: true, sfx: 'boom' },
+    { id: 'size', text: 'O horizonte dele é muito maior que a órbita de *Netuno*.' },
+    { id: 'outro', text: 'Segue pra mais curiosidades do universo!' },
   ],
 
   youtube: {
@@ -127,14 +132,14 @@ export default {
     return { disk, diskMat, halo, haloMat, ring, ringMat, faller, fallerGlow, clk: hud.querySelector('#clk'), c1: hud.querySelector('#c1'), c2: hud.querySelector('#c2') };
   },
 
-  update(t, { camera }, s) {
+  update(t, { camera, B, E }, s) {
     s.diskMat.uniforms.uTime.value = t;
     s.haloMat.uniforms.uTime.value = t;
 
     // Câmera orbitando levemente acima do plano do disco
-    const dist = keyframes(t, [[0, 19], [3.5, 15], [8, 12], [13, 9.5], [18.3, 10.5], [24, 11], [30, 21], [36, 24]]);
-    const el = keyframes(t, [[0, 0.2], [8, 0.13], [18, 0.16], [24, 0.12], [33, 0.2]]);
-    const az = -0.5 + t * 0.045;
+    const dist = keyframes(t, [[0, 26], [E('hook'), 15], [B('light') + 1.5, 12], [B('disk') + 1, 9.5], [B('time') + 1, 7.5], [B('spag'), 9.5], [B('ton'), 11], [B('ton') + 2.5, 22], [B('outro') + 1.5, 26]]);
+    const el = keyframes(t, [[0, 0.24], [B('disk'), 0.12], [B('time'), 0.17], [B('spag'), 0.12], [B('size'), 0.22]]);
+    const az = -0.7 + t * 0.07;
     camera.position.set(dist * Math.cos(el) * Math.sin(az), dist * Math.sin(el), dist * Math.cos(el) * Math.cos(az));
     camera.lookAt(0, -0.25, 0);
     camera.updateMatrixWorld();
@@ -142,15 +147,17 @@ export default {
     s.ring.quaternion.copy(camera.quaternion);
 
     // Relógios (dilatação do tempo — ilustrativo)
-    const k = clamp01((t - 13) / 5);
-    const you = Math.max(0, t - 13);
-    s.clk.style.opacity = phase(t, 13.2, 13.8) * (1 - phase(t, 17.8, 18.3));
+    const t0 = B('time'), t1 = E('time2');
+    const k = clamp01((t - t0) / (t1 - t0));
+    const you = Math.max(0, Math.min(t, t1) - t0) * 12;
+    s.clk.style.opacity = phase(t, t0, t0 + 0.4) * (1 - phase(t, B('spag') - 0.3, B('spag')));
     s.c1.textContent = hms(you);
-    s.c2.textContent = hms(you * (1 + 900 * k * k));
+    s.c2.textContent = longTime(you * (1 + 3e6 * Math.pow(k, 4)));
 
     // Espaguetificação
-    const p = clamp01((t - 18.5) / 5.2);
-    s.faller.visible = t > 18.5 && t < 23.7;
+    const f0 = B('spag') - 0.2, f1 = E('spag') + 0.3;
+    const p = clamp01((t - f0) / (f1 - f0));
+    s.faller.visible = t > f0 && t < f1;
     if (s.faller.visible) {
       const pe = ease.inQuad(p);
       const r = 5.2 + (1.02 - 5.2) * Math.pow(pe, 0.9);
@@ -159,7 +166,7 @@ export default {
       s.faller.lookAt(0, 0, 0);
       const stretch = 1 + 18 * Math.pow(p, 3);
       s.faller.scale.set(1 / Math.sqrt(stretch), 1 / Math.sqrt(stretch), stretch);
-      s.faller.material.opacity = 1 - phase(t, 23.2, 23.7);
+      s.faller.material.opacity = 1 - phase(t, f1 - 0.4, f1);
       s.fallerGlow.material.opacity = s.faller.material.opacity;
     }
   },
