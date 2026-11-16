@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Universo 3D Shorts</title>
+  <link rel="stylesheet" href="engine/style.css">
+  <style>
+    html, body { overflow: auto; background: #07070c; }
+    main { max-width: 980px; margin: 0 auto; padding: 48px 16px 80px; }
+    h1 { font-weight: 900; font-size: clamp(32px, 6vw, 52px); margin: 0 0 6px; letter-spacing: -0.02em; }
+    h1 span { color: var(--hl); }
+    p.lead { color: #9aa0b8; font-weight: 600; margin: 0 0 32px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 18px; }
+    a.card { display: block; text-decoration: none; color: #fff; background: #10121c; border: 1px solid #22263a;
+      border-radius: 18px; overflow: hidden; transition: transform .15s, border-color .15s; }
+    a.card:hover { transform: translateY(-3px); border-color: var(--hl); }
+    .thumb { aspect-ratio: 9 / 16; background: radial-gradient(circle at 50% 45%, #2a3b7a, #0b0d18 65%);
+      display: flex; align-items: center; justify-content: center; font-size: 64px; font-weight: 900; color: rgba(255,255,255,.18); }
+    .meta { padding: 14px 16px 18px; }
+    .meta small { color: var(--hl); font-weight: 700; letter-spacing: .08em; }
+    .meta div { font-weight: 700; font-size: 16px; line-height: 1.25; margin-top: 4px; }
+    code { background: #161a2a; padding: 2px 6px; border-radius: 6px; color: #cfe; }
+    .how { margin-top: 40px; color: #9aa0b8; font: 500 15px/1.7 system-ui, sans-serif; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Universo <span>3D</span> Shorts</h1>
+    <p class="lead">Clique em um short para assistir à animação. Grave em MP4 com <code>npm run record -- &lt;id&gt;</code>.</p>
+    <div class="grid" id="grid"></div>
+    <div class="how">
+      Atalhos no player: <code>espaço</code> play/pause · <code>←</code>/<code>→</code> ±1s · marque "zona segura" para ver
+      o que a interface do YouTube cobre. Adicione <code>&amp;t=12</code> à URL para congelar no segundo 12.
+    </div>
+  </main>
+  <script type="module">
+    import { SHORTS } from './shorts/manifest.js';
+    const grid = document.getElementById('grid');
+    grid.innerHTML = SHORTS.map((s, i) => `
+      <a class="card" href="player.html?s=${s.id}">
+        <div class="thumb" style="background:radial-gradient(circle at 50% 45%, ${s.color}, #0b0d18 65%)">${String(i + 1).padStart(2, '0')}</div>
+        <div class="meta"><small>${s.id}</small><div>${s.title}</div></div>
+      </a>`).join('');
+  </script>
+</body>
+</html>

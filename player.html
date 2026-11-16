@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Universo 3D — Player</title>
+  <link rel="stylesheet" href="engine/style.css">
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./node_modules/three/build/three.module.js",
+      "three/addons/": "./node_modules/three/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <div id="stage">
+    <div id="overlay">
+      <div id="handle"></div>
+      <div id="hud"></div>
+      <div id="captions"></div>
+    </div>
+  </div>
+  <div id="controls">
+    <a href="index.html" title="Voltar">&#8592;</a>
+    <button id="play" title="Play/Pause (espaço)">&#10074;&#10074;</button>
+    <input id="seek" type="range" min="0" max="1" step="0.001" value="0">
+    <span id="time">0.0s</span>
+    <label title="Mostrar zona coberta pela interface do YouTube"><input id="safe" type="checkbox"> zona segura</label>
+  </div>
+  <div id="safezone"><div class="sz-bottom"></div><div class="sz-right"></div><div class="sz-top"></div></div>
+  <script type="module" src="engine/boot.js"></script>
+</body>
+</html>

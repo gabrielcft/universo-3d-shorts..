@@ -1,0 +1,70 @@
+@font-face { font-family: 'Montserrat'; font-weight: 600; font-display: block;
+  src: url('../node_modules/@fontsource/montserrat/files/montserrat-latin-600-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Montserrat'; font-weight: 700; font-display: block;
+  src: url('../node_modules/@fontsource/montserrat/files/montserrat-latin-700-normal.woff2') format('woff2'); }
+@font-face { font-family: 'Montserrat'; font-weight: 900; font-display: block;
+  src: url('../node_modules/@fontsource/montserrat/files/montserrat-latin-900-normal.woff2') format('woff2'); }
+
+:root { --hl: #ffd23f; --hl2: #3df5ff; }
+html, body { margin: 0; height: 100%; background: #050507; overflow: hidden;
+  font-family: 'Montserrat', system-ui, sans-serif; color: #fff; }
+
+/* Palco fixo 1080x1920, escalado para caber na janela durante o preview */
+#stage { position: absolute; left: 50%; top: calc(50% - 28px); width: 1080px; height: 1920px;
+  transform: translate(-50%, -50%) scale(var(--s, 0.4)); transform-origin: center; overflow: hidden;
+  box-shadow: 0 0 0 1px #222, 0 20px 80px rgba(0,0,0,.6); }
+#stage canvas { position: absolute; inset: 0; width: 1080px; height: 1920px; display: block; }
+#overlay { position: absolute; inset: 0; pointer-events: none; }
+
+#handle { position: absolute; top: 150px; left: 0; right: 0; text-align: center; font-weight: 700;
+  font-size: 30px; letter-spacing: .14em; text-transform: uppercase; color: rgba(255,255,255,.7);
+  text-shadow: 0 2px 14px rgba(0,0,0,.9); }
+
+/* Legendas */
+.cap { position: absolute; left: 80px; right: 80px; text-align: center; font-weight: 900;
+  line-height: 1.1; letter-spacing: -0.01em; opacity: 0; will-change: transform, opacity;
+  text-shadow: 0 5px 0 rgba(0,0,0,.45), 0 0 34px rgba(0,0,0,.95), 0 0 6px rgba(0,0,0,.9); }
+.cap .hl { color: var(--hl); }
+.cap .hl2 { color: var(--hl2); }
+.cap.size-xl { font-size: 96px; }
+.cap.size-l  { font-size: 76px; }
+.cap.size-m  { font-size: 62px; }
+.cap.pos-top    { top: 260px; }
+.cap.pos-center { top: 50%; }
+.cap.pos-bottom { bottom: 560px; }
+
+/* HUD genérico usado pelas cenas */
+#hud { position: absolute; inset: 0; }
+.panel { position: absolute; left: 110px; right: 110px; bottom: 540px; padding: 34px 40px;
+  border-radius: 34px; background: rgba(8,10,22,.55); border: 2px solid rgba(255,255,255,.14);
+  backdrop-filter: blur(8px); font-weight: 700; font-size: 38px; opacity: 0; }
+.panel .row { display: flex; justify-content: space-between; align-items: baseline; margin: 6px 0 12px; }
+.panel .row b { font-weight: 900; font-size: 46px; }
+.panel .bar { height: 22px; border-radius: 11px; background: rgba(255,255,255,.12); overflow: hidden; margin-bottom: 26px; }
+.panel .bar i { display: block; height: 100%; width: 0; border-radius: 11px; }
+.panel .big { text-align: center; font-size: 40px; color: rgba(255,255,255,.8); }
+.panel .big b { color: #fff; font-size: 64px; font-weight: 900; font-variant-numeric: tabular-nums; }
+.label3d { position: absolute; left: 0; top: 0; transform: translate(-50%, -100%); text-align: center;
+  white-space: nowrap; text-shadow: 0 0 18px rgba(0,0,0,1), 0 3px 0 rgba(0,0,0,.5); opacity: 0; }
+.label3d b { display: block; font-weight: 900; font-size: 58px; }
+.label3d span { display: block; font-weight: 700; font-size: 34px; color: var(--hl); }
+
+/* Controles do preview (escondidos durante a gravação) */
+#controls { position: fixed; left: 0; right: 0; bottom: 0; height: 56px; display: flex; gap: 14px;
+  align-items: center; padding: 0 16px; background: #0b0c12; border-top: 1px solid #1d1f2b;
+  font: 600 14px system-ui, sans-serif; color: #aab; box-sizing: border-box; }
+#controls a { color: #aab; text-decoration: none; font-size: 22px; }
+#controls button { background: #1d2030; color: #fff; border: 0; border-radius: 8px; width: 40px; height: 34px; cursor: pointer; }
+#controls input[type=range] { flex: 1; min-width: 60px; }
+#controls #time { width: 56px; font-variant-numeric: tabular-nums; }
+#controls label { white-space: nowrap; }
+#safezone { display: none; position: absolute; left: 50%; top: calc(50% - 28px); width: 1080px; height: 1920px;
+  transform: translate(-50%, -50%) scale(var(--s, 0.4)); pointer-events: none; }
+#safezone div { position: absolute; background: rgba(255,0,80,.22); outline: 2px dashed rgba(255,0,80,.6); }
+#safezone .sz-bottom { left: 0; right: 0; bottom: 0; height: 480px; }
+#safezone .sz-right { right: 0; bottom: 480px; width: 150px; height: 700px; }
+#safezone .sz-top { left: 0; right: 0; top: 0; height: 120px; }
+body.show-safe #safezone { display: block; }
+
+body.recording #controls, body.recording #safezone { display: none !important; }
+body.recording #stage { left: 0; top: 0; transform: none; box-shadow: none; }
