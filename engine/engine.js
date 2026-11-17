@@ -251,6 +251,8 @@ export async function runShort(def) {
     sky.position.copy(camera.position);
     if (starfield) starfield.material.uniforms.uTime.value = t;
     if (toonSky) toonSky.userData.stars.uniforms.uTime.value = t;
+    // o céu sempre além do plano próximo da câmera (zooms gigantes aumentam o near)
+    if (toonSky) toonSky.scale.setScalar(Math.max(1, (camera.near * 4) / 1500));
     flashEl.style.opacity = (fx.flash * 0.85).toFixed(3);
     updateCaptions(t);
     composer.render();
