@@ -306,7 +306,8 @@ function gradient(stops) {
  * Textura equiretangular gerada por ruído 3D amostrado na esfera (sem emenda).
  * kind: 'gas' (faixas), 'rocky' (continentes), 'clouds' (alpha).
  */
-export function planetTexture({ w = 1024, h = 512, seed = 1, kind = 'rocky', stops, scale = 2, bandFreq = 12, turb = 1.2, ice = 0, contrast = 2 } = {}) {
+export function planetTexture({ w = 1024, h = 512, seed = 1, kind = 'rocky', stops, scale = 2, bandFreq = 12, turb = 1.2, ice = 0, contrast = 2, posterize = 0 } = {}) {
+  const post = (v) => (posterize ? Math.round(v * posterize) / posterize : v);
   const cv = document.createElement('canvas');
   cv.width = w; cv.height = h;
   const g = cv.getContext('2d');
@@ -323,7 +324,7 @@ export function planetTexture({ w = 1024, h = 512, seed = 1, kind = 'rocky', sto
       const i = (y * w + x) * 4;
       if (kind === 'clouds') {
         const n = fbm(px * scale + 5, py * scale * 1.6, pz * scale, 6);
-        const a = smoothstep(0.56, 0.74, n) * 0.85;
+        const a = posterize ? (n > 0.62 ? 1 : 0) : smoothstep(0.56, 0.74, n) * 0.85;
         img.data.set([255, 255, 255, a * 255], i);
         continue;
       }
@@ -332,12 +333,13 @@ export function planetTexture({ w = 1024, h = 512, seed = 1, kind = 'rocky', sto
         const warp = fbm(px * scale, py * scale, pz * scale, 5) - 0.5;
         v = 0.5 + 0.5 * Math.sin(lat * bandFreq + warp * turb * 8);
         v += (fbm(px * 9, py * 9, pz * 9, 3) - 0.5) * 0.25;
-        c = grad(clamp01(v));
+        c = grad(post(clamp01(v)));
       } else {
         v = clamp01((fbm(px * scale, py * scale, pz * scale, 6) - 0.5) * contrast + 0.5);
-        c = grad(v);
+        c = grad(posterize ? v : v);
         if (ice) {
-          const k = smoothstep(ice, ice + 0.06, Math.abs(sl) + (fbm(px * 6, py * 6, pz * 6, 3) - 0.5) * 0.15);
+          let k = smoothstep(ice, ice + 0.06, Math.abs(sl) + (fbm(px * 6, py * 6, pz * 6, 3) - 0.5) * 0.15);
+          if (posterize) k = k > 0.5 ? 1 : 0;
           c = c.clone().lerp(white, k);
         }
       }

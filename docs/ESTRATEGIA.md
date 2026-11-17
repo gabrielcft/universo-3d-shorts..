@@ -8,8 +8,18 @@ Antes de escolher, confira se o @ está livre no YouTube, no TikTok e no Instagr
 
 **Identidade visual (já aplicada nos vídeos):**
 - Fundo espacial escuro com nebulosa sutil
-- Fonte Montserrat Black nas legendas
-- Destaques em **amarelo `#ffd23f`** (números e fatos) e **ciano `#3df5ff`** (termos científicos)
+- Visual 3D cartunesco: cores chapadas, contorno preto, céu com estrelinhas
+- Astronauta de visor escuro e olhinhos brilhantes como personagem fixo do canal
+- Legendas em fonte condensada (Anton), com a palavra falada numa **caixa laranja `#ff6a2b`**
+
+## Formato: "E se você..."
+
+Cada short coloca o espectador **dentro da história** em 2ª pessoa ("Você chega perto... e estica a colher"). Um astronauta cartunesco faz o papel de "você".
+
+- O título e a primeira frase começam com **"E se você..."**
+- Cada frase é um **plano novo** (corte seco), e a câmera desliza devagar dentro dele
+- Um toque de humor no final ("Moral da história: nunca leve uma colher pra uma estrela de nêutrons")
+- **Ideias de pauta nesse formato:** "E se você caísse em Júpiter?", "E se você morasse na Lua?", "E se você tentasse cavar até o centro da Terra?", "E se você gritasse no espaço?", "E se você visitasse um planeta de diamante?", "E se o Sol sumisse?"
 
 ## Fórmula de cada short (25–45 s)
 

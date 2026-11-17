@@ -2,9 +2,13 @@
 
 Estúdio para produzir **YouTube Shorts sobre curiosidades do universo** com animações 3D feitas em HTML/JavaScript ([Three.js](https://threejs.org)).
 
+O formato é **"E se você..."**: histórias narradas em 2ª pessoa, com um astronauta (você!) num visual **3D cartunesco**.
+
 - Formato vertical **1080×1920, 30 fps**: o formato que o Shorts espera
+- Visual de desenho: cores chapadas, contorno preto, céu com estrelinhas e um personagem astronauta animável
+- Cortes de câmera a cada frase, como num vídeo editado
 - **Narração com voz neural** em português (gerada a partir do roteiro)
-- **Legendas palavra por palavra** sincronizadas com a voz, no estilo dos Shorts
+- **Legendas** em fonte condensada, com a palavra falada destacada numa caixa laranja
 - Animações e efeitos (zoom, tremor, clarão, *whoosh*, *boom*) disparados pelas frases da narração
 - Gravação **quadro a quadro** em MP4. O vídeo sai sem travadas mesmo num PC fraco.
 - **Música ambiente original** sintetizada para cada short (pads, sinos, vento cósmico), que abaixa sozinha quando a voz fala. Sem direitos autorais.
@@ -14,17 +18,17 @@ Estúdio para produzir **YouTube Shorts sobre curiosidades do universo** com ani
 
 | # | Short | Duração |
 |---|-------|---------|
-| 01 | Uma colher de estrela de nêutrons pesa 1 bilhão de toneladas | ~26 s |
-| 02 | Em Vênus, um dia dura mais que um ano | ~30 s |
-| 03 | O quão pequena a Terra é? (Terra → Betelgeuse) | ~34 s |
-| 04 | O que acontece se você cair em um buraco negro? | ~32 s |
+| 01 | E se você pegasse uma colher de estrela de nêutrons? | ~29 s |
+| 02 | E se você tentasse passar um dia em Vênus? | ~31 s |
+| 03 | E se você fosse de foguete até a maior estrela? | ~38 s |
+| 04 | E se você caísse num buraco negro? | ~32 s |
 
 ## Como usar
 
 Requisitos: [Node.js 18+](https://nodejs.org) e [ffmpeg](https://ffmpeg.org/download.html) instalado no PATH.
 
 ```bash
-npm install                                              # three.js + fonte
+npm install                                              # three.js + fontes
 npm i -D playwright && npx playwright install chromium   # só para gravar MP4
 pip install edge-tts numpy                               # narração nova e música ambiente
 ```
@@ -83,12 +87,17 @@ Veja o plano do canal e 30 ideias de pauta em [`docs/ESTRATEGIA.md`](docs/ESTRAT
 
 Para sincronizar com a voz, use dentro do `update`: `B('id')` (início da frase), `E('id')` (fim da frase) e `W('id', 'palavra')` (instante em que a palavra é dita).
 
-Peças prontas em `engine/space.js`:
+Peças prontas:
 
 | Função | O que faz |
 |--------|-----------|
+| `createAstronaut()` | o personagem: `.pose({ armL, armR, legL, legR, eyes, look, nod, t })` e `.float(t)`. Olhos: `normal`, `scared`, `happy`, `squint` |
+| `createRocket()`, `createSpoon()`, `createBuildings()`, `createSpeedLines()`, `createThermometer()` | adereços de desenho (`engine/characters.js`) |
+| `toonMat(cor)`, `addOutlines(obj)` | material de cor chapada e contorno preto (`engine/toon.js`) |
+| `toonStarMat({c, light, dark})`, `createToonHalo(cor, raio)` | sol/estrela de desenho e auréola |
+| `applyShots(camera, t, shots)` | planos de câmera: corte seco em cada plano e deslize suave dentro dele |
 | `createStarMaterial({color, hot})` | superfície de estrela animada (Sol, gigantes vermelhas, anãs azuis) |
-| `planetTexture({kind, stops})` | textura procedural: `rocky` (Terra/Marte), `gas` (Júpiter/Saturno), `clouds` |
+| `planetTexture({kind, stops, posterize})` | textura procedural: `rocky` (Terra/Marte), `gas` (Júpiter/Saturno), `clouds`. `posterize` deixa as cores chapadas |
 | `createAtmosphere(raio, cor)` | brilho de atmosfera na borda |
 | `createGlow(cor, tamanho)` | halo de luz |
 | `createArcArrow({...})` | seta curva indicando movimento |
@@ -101,6 +110,8 @@ No roteiro, `*texto*` fica **amarelo** e `**texto**` fica **ciano**. Opções po
 
 O @ do canal fica escondido por padrão (`showHandle: false` em `config.js`).
 
+Outras opções do short: `toon: true` (visual cartunesco), `sky: { top, bottom }` (cores do céu), `captionStyle: 'box' | 'pop'` (estilo da legenda).
+
 ## Estrutura
 
 ```
@@ -110,6 +121,8 @@ player.html          player/gravador de um short
 engine/engine.js     renderer, bloom, legendas, loop
 engine/space.js      peças 3D e utilitários
 engine/script.js     roteiro → palavras, tempos e blocos de legenda
+engine/toon.js       visual cartunesco (materiais, contorno, céu, planos de câmera)
+engine/characters.js astronauta e adereços
 narration/           vozes geradas (.mp3 + tempos .json)
 shorts/*.js          um arquivo por short
 tools/narrate.mjs    gera a narração (edge-tts)

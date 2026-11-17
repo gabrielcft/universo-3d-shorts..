@@ -16,6 +16,7 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { CHANNEL } from '../config.js';
 import { createStarfield, createNebula, clamp01, ease } from './space.js';
 import { tokenize, estimate, chunk, norm } from './script.js';
+import { createToonSky } from './toon.js';
 
 export const W = 1080;
 export const H = 1920;
@@ -79,7 +80,8 @@ export async function runShort(def) {
   });
   renderer.setPixelRatio(1);
   renderer.setSize(W, H, false);
-  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  // estilo cartunesco: cores exatas, sem o "filtro de cinema" do ACES
+  renderer.toneMapping = def.toon ? THREE.NoToneMapping : THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = def.exposure ?? 1.0;
   stage.prepend(renderer.domElement);
 
@@ -100,9 +102,14 @@ export async function runShort(def) {
   // ---------- Fundo ----------
   const sky = new THREE.Group();
   scene.add(sky);
-  if (def.nebula !== false) sky.add(createNebula({ radius: camera.far * 0.8, ...(def.nebula || {}) }));
-  let starfield = null;
-  if (def.stars !== false) {
+  let starfield = null, toonSky = null;
+  if (def.toon) {
+    // o céu é desenhado sem teste de profundidade (sempre atrás de tudo), então um raio
+    // pequeno basta e evita problemas de precisão em cenas com escalas gigantes
+    toonSky = createToonSky({ radius: Math.min(camera.far * 0.8, 1500), ...(def.sky || {}) });
+    sky.add(toonSky);
+  } else if (def.nebula !== false) sky.add(createNebula({ radius: camera.far * 0.8, ...(def.nebula || {}) }));
+  if (!def.toon && def.stars !== false) {
     starfield = createStarfield({ radius: camera.far * 0.6, ...(def.stars || {}) });
     sky.add(starfield);
   }
@@ -129,11 +136,16 @@ export async function runShort(def) {
 
   // Legendas da narração: blocos de 1–3 palavras que surgem conforme são faladas
   const kchunks = [];
+  // estilo 'box' (padrão): bloco inteiro visível e a palavra falada numa caixa colorida
+  // estilo 'pop': as palavras surgem uma a uma
+  const capStyle = def.captionStyle ?? 'box';
   narration?.lines.forEach((line, li) => {
-    const groups = chunk(line.words, def.captionWords ?? 3, def.captionChars ?? 15);
+    const groups = capStyle === 'box'
+      ? chunk(line.words, def.captionWords ?? 4, def.captionChars ?? 22)
+      : chunk(line.words, def.captionWords ?? 3, def.captionChars ?? 15);
     groups.forEach((g, gi) => {
       const el = document.createElement('div');
-      el.className = 'kchunk';
+      el.className = `kchunk style-${capStyle}`;
       const spans = g.map((w) => {
         const sp = document.createElement('span');
         sp.className = `kw${w.hl ? ` hl${w.hl === 2 ? '2' : ''}` : ''}`;
@@ -151,6 +163,7 @@ export async function runShort(def) {
 
   const ctx = { THREE, scene, camera, renderer, composer, bloom, hud, W, H, params, recording, def, B, E, W: Wt, narration, duration };
   const state = (await def.setup?.(ctx)) || {};
+  window.__debug = { ctx, state, sky }; // acesso para depuração no console do navegador
 
   // Efeitos automáticos nas viradas de frase
   const beats = narration ? narration.lines.map((l, i) => ({ t: l.start, ...def.script[i] })) : [];
@@ -196,6 +209,18 @@ export async function runShort(def) {
       const on = t >= k.start && t < k.end;
       if (on !== k.shown) { k.el.style.display = on ? '' : 'none'; k.shown = on; }
       if (!on) continue;
+      if (capStyle === 'box') {
+        const pin = clamp01((t - k.start) / 0.12);
+        const ck = pin.toFixed(2);
+        if (ck !== k.key) { k.key = ck; k.el.style.opacity = pin; k.el.style.transform = `translateY(-50%) scale(${(0.92 + 0.08 * ease.outBack(pin)).toFixed(3)})`; }
+        let cur = -1;
+        k.spans.forEach((w, i) => { if (t >= w.s - 0.03) cur = i; });
+        k.spans.forEach((w, i) => {
+          const on = i === cur;
+          if (on !== w.on) { w.on = on; w.sp.classList.toggle('on', on); }
+        });
+        continue;
+      }
       for (const w of k.spans) {
         const p = clamp01((t - w.s) / 0.13);
         const sc = t < w.s ? 0.6 : 0.62 + 0.38 * ease.outBack(p) + 0.08 * Math.exp(-(t - w.s) * 8);
@@ -225,6 +250,7 @@ export async function runShort(def) {
     camera.updateMatrixWorld();
     sky.position.copy(camera.position);
     if (starfield) starfield.material.uniforms.uTime.value = t;
+    if (toonSky) toonSky.userData.stars.uniforms.uTime.value = t;
     flashEl.style.opacity = (fx.flash * 0.85).toFixed(3);
     updateCaptions(t);
     composer.render();

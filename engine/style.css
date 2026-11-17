@@ -34,7 +34,7 @@ html, body { margin: 0; height: 100%; background: #050507; overflow: hidden;
 .cap.pos-bottom { bottom: 560px; }
 
 /* Legendas da narração (palavra por palavra) */
-#stage { --capY: 1240px; }
+#stage { --capY: 1290px; }
 .kchunk { position: absolute; left: 50px; right: 50px; top: var(--capY); transform: translateY(-50%);
   text-align: center; font-weight: 900; font-size: 112px; line-height: 1.04; letter-spacing: -0.01em; }
 .kw { display: inline-block; margin: 0 0.13em; opacity: 0; transform-origin: 50% 70%;
@@ -42,6 +42,20 @@ html, body { margin: 0; height: 100%; background: #050507; overflow: hidden;
   text-shadow: 0 8px 0 rgba(0,0,0,.55), 0 0 40px rgba(0,0,0,.7); }
 .kw.hl { color: var(--hl); }
 .kw.hl2 { color: var(--hl2); }
+
+/* Estilo 'box': fonte condensada, palavra falada em caixa colorida */
+@font-face { font-family: 'Anton'; font-weight: 400; font-display: block;
+  src: url('../node_modules/@fontsource/anton/files/anton-latin-400-normal.woff2') format('woff2'); }
+#stage { --box: #ff6a2b; --capFont: 'Anton', 'Montserrat', sans-serif; }
+.kchunk.style-box { font-family: var(--capFont); font-weight: 400; font-size: 92px; line-height: 1.12;
+  text-transform: uppercase; letter-spacing: 0.02em; left: 70px; right: 70px; }
+.kchunk.style-box .kw { opacity: 1; margin: 0 0.06em; padding: 0.02em 0.14em 0; border-radius: 14px;
+  -webkit-text-stroke: 0; transform: none;
+  text-shadow: 0 3px 0 rgba(0,0,0,.55), 0 0 18px rgba(0,0,0,.65), 2px 2px 0 rgba(0,0,0,.4); }
+.kchunk.style-box .kw.on { background: var(--box); color: #fff; text-shadow: 0 2px 0 rgba(0,0,0,.25);
+  box-shadow: 0 6px 0 rgba(0,0,0,.28); }
+.kchunk.style-box .kw.hl:not(.on) { color: #ffd23f; }
+.kchunk.style-box .kw.hl2:not(.on) { color: #5ff3ff; }
 
 #vignette { position: absolute; inset: 0; background: radial-gradient(ellipse 75% 60% at 50% 48%, transparent 55%, rgba(0,0,0,.55) 100%); }
 #flash { position: absolute; inset: 0; background: #fff; opacity: 0; mix-blend-mode: screen; }
